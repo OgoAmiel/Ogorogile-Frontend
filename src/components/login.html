@@ -1,0 +1,149 @@
+<div class="login-page-root">
+    <div class="left-panel">
+      <div class="lp-brand">
+        <div class="lp-logo">
+          <div class="lp-logo-icon"><i class="bi bi-calendar2-check"></i></div>
+          <span class="lp-logo-name">LeavePortal</span>
+        </div>
+
+        <h1 class="lp-headline">
+          Manage your<br>leave with <span>ease.</span>
+        </h1>
+
+        <p class="lp-desc">
+          A simple, modern self-service portal for submitting, tracking, and managing your leave requests.
+        </p>
+
+        <ul class="lp-features">
+          <li><i class="bi bi-send"></i> Submit requests in seconds</li>
+          <li><i class="bi bi-bar-chart-line"></i> Track your leave balances</li>
+          <li><i class="bi bi-bell"></i> Real-time approval status</li>
+          <li><i class="bi bi-shield-check"></i> Secure & private</li>
+        </ul>
+      </div>
+
+      <div class="lp-footer">© 2026 LeavePortal · Employee Self-Service</div>
+    </div>
+
+    <div class="right-panel">
+      <div class="login-box" v-if="!loginSuccess">
+        <div class="login-box-header">
+          <div class="login-box-title">Welcome back</div>
+          <div class="login-box-sub">Sign in to access your leave portal</div>
+        </div>
+
+        <div class="hint-box">
+          <i class="bi bi-lightbulb"></i>
+          <div>Enter your company username and password to sign in.</div>
+        </div>
+
+        <div class="alert-error" v-if="errorMsg" :key="errorKey">
+          <i class="bi bi-exclamation-circle-fill" style="flex-shrink: 0;"></i>
+          {{ errorMsg }}
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="username">Username</label>
+          <div class="field-wrap">
+            <input
+              id="username"
+              type="text"
+              class="field-input"
+              :class="{ 'has-error': fieldErrors.username }"
+              placeholder="Enter your username"
+              v-model.trim="form.username"
+              @input="clearError('username')"
+              @keyup.enter="focusPassword"
+              autocomplete="username"
+            />
+            <i class="bi bi-person field-icon"></i>
+          </div>
+          <div class="field-error" v-if="fieldErrors.username">
+            <i class="bi bi-exclamation-circle-fill"></i> {{ fieldErrors.username }}
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="password">Password</label>
+          <div class="field-wrap">
+            <input
+              id="password"
+              ref="passwordField"
+              :type="showPassword ? 'text' : 'password'"
+              class="field-input"
+              :class="{ 'has-error': fieldErrors.password }"
+              placeholder="Enter your password"
+              v-model="form.password"
+              @input="clearError('password')"
+              @keyup.enter="handleLogin"
+              autocomplete="current-password"
+              style="padding-right: 44px;"
+            />
+            <i class="bi bi-lock field-icon"></i>
+            <button
+              class="toggle-pw"
+              type="button"
+              @click="showPassword = !showPassword"
+              :title="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+          <div class="field-error" v-if="fieldErrors.password">
+            <i class="bi bi-exclamation-circle-fill"></i> {{ fieldErrors.password }}
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="remember-wrap">
+            <input type="checkbox" v-model="form.remember" />
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button class="btn-login" @click="handleLogin" :disabled="loading">
+          <div class="spinner" v-if="loading"></div>
+          <template v-else>
+            Sign in <i class="bi bi-arrow-right"></i>
+          </template>
+        </button>
+
+        <div class="divider">or continue with</div>
+
+        <button class="btn-sso" type="button">
+          <div class="sso-icon">
+            <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#4285F4" d="M47.5 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h13.2c-.6 3-2.4 5.6-5 7.3v6h8.1c4.7-4.4 7.2-10.8 7.2-17.4z"/>
+              <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-8.1-6c-2.1 1.4-4.8 2.3-7.8 2.3-6 0-11.1-4-12.9-9.5H2.8v6.2C6.8 42.8 14.8 48 24 48z"/>
+              <path fill="#FBBC05" d="M11.1 28.9A14.4 14.4 0 0 1 11.1 19V12.9H2.8a24 24 0 0 0 0 22.2l8.3-6.2z"/>
+              <path fill="#EA4335" d="M24 9.5c3.4 0 6.4 1.2 8.8 3.4l6.5-6.5C35.9 2.4 30.5 0 24 0 14.8 0 6.8 5.2 2.8 12.9l8.3 6.2C12.9 13.5 18 9.5 24 9.5z"/>
+            </svg>
+          </div>
+          Sign in with Google
+        </button>
+
+        <div class="login-footer">
+          By signing in you agree to our
+          <a href="#" style="color: var(--brand-accent); text-decoration: none;">Terms of Service</a>
+          and
+          <a href="#" style="color: var(--brand-accent); text-decoration: none;">Privacy Policy</a>.
+        </div>
+      </div>
+
+      <div class="success-screen login-box" v-else>
+        <div class="success-icon">
+          <i class="bi bi-check-lg"></i>
+        </div>
+        <h2 style="font-size: 22px; font-weight: 600; margin-bottom: 8px;">You're signed in!</h2>
+        <p style="font-size: 14px; color: var(--brand-muted); margin-bottom: 28px;">
+          Welcome back, <strong>{{ displayName }}</strong>. Redirecting you to your dashboard…
+        </p>
+        <div style="display: flex; justify-content: center;">
+          <div
+            style="width: 36px; height: 36px; border: 3px solid var(--brand-border); border-top-color: var(--brand-accent); border-radius: 50%; animation: spin 0.7s linear infinite;"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
