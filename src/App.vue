@@ -4,6 +4,7 @@ import axios from 'axios'
 import LoginPage from './components/LoginPage.vue'
 import LeaveManagement from './components/LeaveManagement.vue'
 import ManagePendingRequests from './components/ManagePendingRequests.vue'
+import AdminManagement from './components/AdminManagement.vue'
 
 const isAuthenticated = ref(!!localStorage.getItem('accessToken'))
 const currentUser = ref(null)
@@ -69,6 +70,11 @@ onMounted(async () => {
   <div v-else-if="loadingUser" class="container py-5 text-center">
     Loading...
   </div>
+
+  <AdminManagement
+    v-else-if="currentUser && currentUser.role === 'ADMIN'"
+    @logout="handleLogout"
+  />
 
   <ManagePendingRequests
     v-else-if="currentUser && currentUser.role === 'MANAGER'"

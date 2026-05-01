@@ -1,0 +1,327 @@
+<div class="leave-portal-root">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">LeavePortal</div>
+      <div class="brand-sub">Admin Console</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+
+      <button
+        class="nav-item-btn"
+        :class="{ active: currentTab === 'users' }"
+        @click="currentTab = 'users'"
+      >
+        <i class="bi bi-people"></i> User Management
+      </button>
+
+      <button class="nav-item-btn" disabled>
+        <i class="bi bi-card-checklist"></i> Leave Requests
+      </button>
+
+      <button class="nav-item-btn" disabled>
+        <i class="bi bi-calendar2-week"></i> Leave Types
+      </button>
+
+      <button class="nav-item-btn" disabled>
+        <i class="bi bi-wallet2"></i> Leave Balances
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar">{{ initials }}</div>
+        <div>
+          <div class="user-name">{{ displayName }}</div>
+          <div class="user-role">{{ displayRole }}</div>
+        </div>
+      </div>
+
+      <button class="nav-item-btn mt-3" @click="logoutUser">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="page-title">{{ pageTitle }}</div>
+        <div class="page-subtitle">{{ pageSubtitle }}</div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn-outline-custom" @click="fetchUsers">
+          <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+        </button>
+        <button class="btn-outline-custom" @click="openCreateUserForm">
+          <i class="bi bi-plus-lg me-1"></i> New User
+        </button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="balance-card">
+            <div class="accent-bar" style="background:#e8622a;"></div>
+            <div class="bc-label">Total Users</div>
+            <div class="bc-number" style="color:#e8622a;">{{ totalUsers }}</div>
+            <div class="bc-sub">Across the system</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="balance-card">
+            <div class="accent-bar" style="background:#2563eb;"></div>
+            <div class="bc-label">Employees</div>
+            <div class="bc-number" style="color:#2563eb;">{{ totalEmployees }}</div>
+            <div class="bc-sub">Across the system</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="balance-card">
+            <div class="accent-bar" style="background:#16a34a;"></div>
+            <div class="bc-label">Managers</div>
+            <div class="bc-number" style="color:#16a34a;">{{ totalManagers }}</div>
+            <div class="bc-sub">Current manager accounts</div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="errorMessage" class="alert-error mb-3">
+        <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;"></i>
+        {{ errorMessage }}
+      </div>
+
+      <div v-if="successMessage" class="alert-success-custom mb-3">
+        <i class="bi bi-check-circle-fill" style="font-size:16px;"></i>
+        {{ successMessage }}
+      </div>
+
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="section-card">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+              <div class="section-card-title" style="margin-bottom:0;">System Users</div>
+
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <input
+                  v-model="searchTerm"
+                  type="text"
+                  class="form-control"
+                  style="width:220px;"
+                  placeholder="Search users..."
+                />
+
+                <select class="form-select" style="width:auto; font-size:13px;" v-model="roleFilter">
+                  <option value="all">All roles</option>
+                  <option value="EMPLOYEE">Employee</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="loading" class="empty-state">
+              <div class="spinner-border text-secondary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-3">Loading users</p>
+            </div>
+
+            <div v-else-if="filteredUsers.length">
+              <div
+                v-for="userItem in filteredUsers"
+                :key="userItem.id"
+                class="request-card"
+              >
+                <div class="request-card-top">
+                  <div class="request-card-main">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                      <span class="type-badge type-other">
+                        <span class="type-dot" style="background:#64748b;"></span>
+                        {{ formatRole(userItem.role) }}
+                      </span>
+
+                      <span :class="['status-badge', userItem.is_active ? 'approved' : 'rejected']">
+                        <span class="status-dot"></span>
+                        {{ userItem.is_active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </div>
+
+                    <div class="employee-name">
+                      {{ formatUserName(userItem) }}
+                    </div>
+
+                    <div class="employee-meta">
+                      {{ userItem.username }}
+                      <span class="mx-2">•</span>
+                      {{ userItem.employee_number || 'No employee number' }}
+                    </div>
+
+                    <div class="request-dates mt-2">
+                      <i class="bi bi-building me-1"></i>
+                      {{ userItem.department || 'No department' }}
+                    </div>
+
+                    <div class="request-days" v-if="userItem.manager_name">
+                      <i class="bi bi-person-badge me-1"></i>
+                      Manager: {{ userItem.manager_name }}
+                    </div>
+
+                    <div class="request-reason mt-2" v-if="userItem.email">
+                      <strong>Email:</strong> {{ userItem.email }}
+                    </div>
+                  </div>
+
+                  <div class="request-actions">
+                    <button
+                      class="btn-outline-custom"
+                      @click="openEditUserForm(userItem)"
+                    >
+                      <i class="bi bi-pencil-square me-1"></i> Edit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="empty-state">
+              <i class="bi bi-inbox d-block"></i>
+              <p>No users match your filters</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div v-if="isUserModalOpen" class="modal-backdrop" @click.self="closeUserModal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <div class="modal-title">{{ formMode === 'create' ? 'Create User' : 'Edit User' }}</div>
+          <button class="modal-close" type="button" @click="closeUserModal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input
+              v-model="userForm.username"
+              type="text"
+              class="form-control"
+              :disabled="formMode === 'edit'"
+              placeholder="Enter username"
+            />
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">First Name</label>
+              <input
+                v-model="userForm.first_name"
+                type="text"
+                class="form-control"
+                placeholder="First name"
+              />
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">Last Name</label>
+              <input
+                v-model="userForm.last_name"
+                type="text"
+                class="form-control"
+                placeholder="Last name"
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input
+              v-model="userForm.email"
+              type="email"
+              class="form-control"
+              placeholder="Enter email address"
+            />
+          </div>
+
+          <div class="mb-3" v-if="formMode === 'create'">
+            <label class="form-label">Password</label>
+            <input
+              v-model="userForm.password"
+              type="password"
+              class="form-control"
+              placeholder="Temporary password"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" v-model="userForm.role" @change="handleRoleChange">
+              <option value="EMPLOYEE">Employee</option>
+              <option value="MANAGER">Manager</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">Employee Number</label>
+              <input
+                v-model="userForm.employee_number"
+                type="text"
+                class="form-control"
+                placeholder="Employee number"
+              />
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">Department</label>
+              <input
+                v-model="userForm.department"
+                type="text"
+                class="form-control"
+                placeholder="Department"
+              />
+            </div>
+          </div>
+
+          <div class="mb-4" v-if="userForm.role === 'EMPLOYEE'">
+            <label class="form-label">Manager</label>
+            <select class="form-select" v-model="userForm.manager_id">
+              <option value="">Select manager</option>
+              <option
+                v-for="manager in managerOptions"
+                :key="manager.id"
+                :value="manager.id"
+              >
+                {{ formatUserName(manager) }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-outline-custom" type="button" @click="closeUserModal">
+            Cancel
+          </button>
+          <button class="btn-approve" :disabled="submitting" type="button" @click="submitUserForm">
+            <span v-if="submitting">
+              {{ formMode === 'create' ? 'Creating...' : 'Updating...' }}
+            </span>
+            <span v-else>
+              {{ formMode === 'create' ? 'Create User' : 'Update User' }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
