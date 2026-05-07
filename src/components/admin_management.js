@@ -15,6 +15,8 @@ export default {
       loading: true,
       submitting: false,
       leaveTypeSubmitting: false,
+      deleteSubmitting: false,
+      deletingUserId: null,
 
       errorMessage: '',
       successMessage: '',
@@ -462,6 +464,59 @@ export default {
     closeUserModal() {
       this.isUserModalOpen = false
       this.errorMessage = ''
+    },
+
+    async deleteUser(userItem) {
+      if (this.deleteSubmitting) {
+        return
+      }
+
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${this.formatUserName(userItem)}? This action cannot be undone.`
+      )
+
+      if (!confirmed) {
+        return
+      }
+
+      this.deleteSubmitting = true
+      this.deletingUserId = userItem.id
+      this.errorMessage = ''
+      this.successMessage = ''
+
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_API_URL}/user_management/delete_user/`,
+          { user_id: userItem.id },
+          {
+            headers: this.getAuthHeaders(),
+          }
+        )
+
+        if (response.data.status === 'success') {
+          this.successMessage = response.data.message || 'User deleted successfully.'
+          await this.fetchUsers()
+        } else {
+          this.errorMessage = response.data.message || 'Failed to delete user.'
+        }
+      } catch (error) {
+        console.error('Delete user error:', error)
+
+        const message = error?.response?.data?.message
+
+        if (typeof message === 'string') {
+          this.errorMessage = message
+        } else if (Array.isArray(message)) {
+          this.errorMessage = message.join(' ')
+        } else if (typeof message === 'object' && message !== null) {
+          this.errorMessage = Object.values(message).flat().join(' ')
+        } else {
+          this.errorMessage = 'Unable to delete user.'
+        }
+      } finally {
+        this.deleteSubmitting = false
+        this.deletingUserId = null
+      }
     },
 
     openCreateLeaveTypeForm() {
